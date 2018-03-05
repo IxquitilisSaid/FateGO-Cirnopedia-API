@@ -3,12 +3,11 @@ import re
 from bs4 import BeautifulSoup
 
 from api.ServantClass import ServantClass
-
+from api.ServantSkill import ServantSkill
+from api.Constants import *
 
 class Servant:
     def __init__(self, id):
-        CIRNOPEDIA_ROOT = "http://fate-go.cirnopedia.org"
-        CIRNOPEDIA_SERVANT_PAGE = CIRNOPEDIA_ROOT + "/servant_profile.php"
 
         self.raw = BeautifulSoup(requests.get(CIRNOPEDIA_SERVANT_PAGE, params={'servant' : id}).text, 'lxml')
         self.id = id
@@ -52,7 +51,7 @@ class Servant:
             "Unknown": ServantClass.UNKNOWN,
         }
         self.class_ = classAssigner.get(navigator.text.rstrip(), ServantClass.UNKNOWN)
-        navigator = navigator.find_next('td', class_='rare5 desc')
+        navigator = navigator.find_next('td', class_='desc').find_next('td', class_='desc')
         self.rarity = int(navigator.text.count('★'))
         navigator = navigator.find_next('td', class_='desc')
         self.cost = int(navigator.text)
@@ -106,5 +105,14 @@ class Servant:
         navigator = navigator.find_next('td', class_='desc')
         self.traits = navigator.text.rstrip().split(',')
         [x.strip() for x in self.alias]
+
+        # Create skills
+        navigator = navigator.find_next('tr')
+        self.skills = []
+        self.skills.append(ServantSkill(navigator))
+        navigator = navigator.find_next('tr').find_next('tr').find_next('tr')
+        self.skills.append(ServantSkill(navigator))
+        navigator = navigator.find_next('tr').find_next('tr').find_next('tr')
+        self.skills.append(ServantSkill(navigator))
 
         self.deck = {'quick': 0, 'arts': 0, 'buster': 0}
